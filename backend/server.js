@@ -23,14 +23,16 @@ if (!process.env.GEMINI_API_KEY) {
 }
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+// ✅ THIS IS THE FIX
 const model = genAI.getGenerativeModel({
-  model: "gemini-1.0-pro"   // ✅ FIXED MODEL
+  model: "gemini-1.5-pro-latest"
 });
 
 /* ===== Context ===== */
 const navrajProfile = `
-You are a professional AI assistant representing Navraj Giri.
-Answer strictly from the data below.
+You are an AI assistant representing Navraj Giri.
+Answer ONLY from the information below.
 
 Name: Navraj Giri
 Education: B.E. Computer Science (2022–2026)
@@ -39,17 +41,18 @@ Current Semester: 8th
 CGPA: 8.4 / 10
 
 Skills:
-Python, C, C++, JavaScript, HTML, CSS, Node.js, Express.js,
-MongoDB, MySQL, DSA, OOPS, DBMS, Computer Networks
+Python, C, C++, JavaScript, HTML, CSS,
+Node.js, Express.js, MongoDB, MySQL,
+DSA, OOPS, DBMS, Computer Networks
 
-Projects:
-• CryptoPro – Real-time crypto trading platform
+Major Projects:
+• CryptoPro – Real-time cryptocurrency trading platform
 • Portfolio Optimization using Fuzzy Logic
 • AI-powered Stock Analysis Tool
 • Student Database Management System (C++)
 • Risk Aware Pathways to Carbon Neutrality
-  – Uses Monte Carlo Simulation and Whale Optimization Algorithm
-  – Focuses on emission uncertainty analysis and mitigation strategies
+  – Monte Carlo Simulation for uncertainty modeling
+  – Whale Optimization Algorithm for emission reduction strategies
 • Road Construction Optimization using Kruskal’s Algorithm
 
 Achievements:
@@ -58,14 +61,15 @@ Achievements:
 • Frontend Web Development (Coursevita)
 
 Rules:
-- Do not invent information
-- Be concise and professional
+- Do NOT invent information
+- Be concise, professional, and accurate
 `;
 
 /* ===== Chat API ===== */
 app.post("/chat", async (req, res) => {
   try {
     const { message } = req.body;
+
     if (!message) {
       return res.status(400).json({ reply: "Message is required" });
     }
