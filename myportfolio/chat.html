@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,17 +11,21 @@
         body {
             font-family: 'Inter', sans-serif;
         }
+
         /* Simple scrollbar styling */
         #chat-container::-webkit-scrollbar {
             width: 6px;
         }
+
         #chat-container::-webkit-scrollbar-track {
             background: #f1f1f1;
         }
+
         #chat-container::-webkit-scrollbar-thumb {
             background: #aaa;
             border-radius: 3px;
         }
+
         #chat-container::-webkit-scrollbar-thumb:hover {
             background: #888;
         }
@@ -31,6 +36,7 @@
                 opacity: 0;
                 transform: translateY(10px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -42,11 +48,14 @@
         }
     </style>
 </head>
+
 <body class="bg-gradient-to-br from-indigo-50 via-white to-cyan-50 flex items-center justify-center h-screen p-4">
 
-    <div class="w-full max-w-2xl h-full md:h-[90vh] flex flex-col bg-white/70 backdrop-blur-xl rounded-xl shadow-xl border border-gray-200/50">
+    <div
+        class="w-full max-w-2xl h-full md:h-[90vh] flex flex-col bg-white/70 backdrop-blur-xl rounded-xl shadow-xl border border-gray-200/50">
         <!-- Header -->
-        <div class="p-5 border-b border-gray-200/50 bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-t-xl shadow-md">
+        <div
+            class="p-5 border-b border-gray-200/50 bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-t-xl shadow-md">
             <h1 class="text-2xl font-bold">Navraj Giri's AI Assistant</h1>
             <p class="text-sm opacity-90">Ask me anything about Navraj's profile</p>
         </div>
@@ -55,11 +64,22 @@
         <div id="chat-container" class="flex-1 p-6 space-y-6 overflow-y-auto">
             <!-- Initial Bot Message -->
             <div class="flex items-end gap-3 chat-message justify-start">
-                 <div class="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-white flex-shrink-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bot"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
+                <div class="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-white flex-shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="lucide lucide-bot">
+                        <path d="M12 8V4H8" />
+                        <rect width="16" height="12" x="4" y="8" rx="2" />
+                        <path d="M2 14h2" />
+                        <path d="M20 14h2" />
+                        <path d="M15 13v2" />
+                        <path d="M9 13v2" />
+                    </svg>
                 </div>
-                <div class="bg-white text-gray-800 p-3 rounded-r-xl rounded-t-xl shadow-md max-w-xs md:max-w-md break-words">
-                    <p>Hello! I'm an AI assistant for Navraj Giri. You can ask me about his education, projects, skills, and achievements.</p>
+                <div
+                    class="bg-white text-gray-800 p-3 rounded-r-xl rounded-t-xl shadow-md max-w-xs md:max-w-md break-words">
+                    <p>Hello! I'm an AI assistant for Navraj Giri. You can ask me about his education, projects, skills,
+                        and achievements.</p>
                 </div>
             </div>
         </div>
@@ -67,12 +87,19 @@
         <!-- Input Form -->
         <div class="p-4 border-t border-gray-200/50 bg-white/50 rounded-b-xl">
             <div class="flex items-center space-x-3">
-                <input type="text" id="user-input" placeholder="Ask about Navraj's profile..." class="flex-1 px-4 py-2 border bg-gray-50 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-300">
-                <button id="send-btn" class="bg-blue-600 text-white rounded-full p-3 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-transform duration-200 hover:scale-110 active:scale-100">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-send"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                <input type="text" id="user-input" placeholder="Ask about Navraj's profile..."
+                    class="flex-1 px-4 py-2 border bg-gray-50 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-300">
+                <button id="send-btn"
+                    class="bg-blue-600 text-white rounded-full p-3 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-transform duration-200 hover:scale-110 active:scale-100">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="feather feather-send">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
                 </button>
             </div>
-             <p id="error-message" class="text-red-500 text-sm mt-2 text-center"></p>
+            <p id="error-message" class="text-red-500 text-sm mt-2 text-center"></p>
         </div>
     </div>
 
@@ -82,7 +109,8 @@
         const sendBtn = document.getElementById('send-btn');
         const errorMessage = document.getElementById('error-message');
 
-        const serverUrl = 'http://localhost:5000/chat';
+        const serverUrl = 'https://portfolio-backend-ajla.onrender.com/chat';
+
 
         // Function to add a message to the chat
         function addMessage(sender, message) {
@@ -110,13 +138,13 @@
             if (!isUser) {
                 messageWrapper.innerHTML = botAvatar;
             }
-            
+
             messageWrapper.appendChild(messageBubble);
 
-            if(isUser) {
+            if (isUser) {
                 messageWrapper.insertAdjacentHTML('beforeend', userAvatar);
             }
-            
+
             chatContainer.appendChild(messageWrapper);
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
@@ -141,7 +169,7 @@
             chatContainer.appendChild(typingDiv);
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
-        
+
         // Function to remove the typing indicator
         function removeTypingIndicator() {
             const typingIndicator = document.getElementById('typing-indicator');
@@ -171,7 +199,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-                
+
                 removeTypingIndicator();
 
                 if (!response.ok) {
@@ -180,10 +208,10 @@
                 }
 
                 const result = await response.json();
-                
+
                 if (result.reply) {
                     const botResponse = result.reply;
-                     // A simple markdown-to-html conversion for lists and bolding
+                    // A simple markdown-to-html conversion for lists and bolding
                     const formattedResponse = botResponse
                         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
                         .replace(/\* (.*?)(?=\n\*|\n\n|$)/g, '<li>$1</li>') // List items
@@ -213,5 +241,5 @@
 
     </script>
 </body>
-</html>
 
+</html>
