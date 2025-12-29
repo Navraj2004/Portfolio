@@ -14,7 +14,7 @@ app.use(cors());
 app.use(bodyParser.json());
 
 /* =======================
-   HEALTH CHECK ROUTE
+   HEALTH CHECK
 ======================= */
 app.get("/", (req, res) => {
   res.json({ status: "Backend is running" });
@@ -22,10 +22,9 @@ app.get("/", (req, res) => {
 
 /* =======================
    GEMINI INITIALIZATION
-   (STABLE & SAFE)
 ======================= */
 if (!process.env.GEMINI_API_KEY) {
-  console.error("❌ GEMINI_API_KEY is missing");
+  console.error("❌ GEMINI_API_KEY missing");
   process.exit(1);
 }
 
@@ -39,42 +38,100 @@ const model = genAI.getGenerativeModel({
 ======================= */
 const navrajProfile = `
 You are a highly knowledgeable and professional AI assistant for Navraj Giri.
-Your purpose is to act as his digital representative.
+You act as his digital representative for recruiters and collaborators.
 
+IMPORTANT RULES:
+- Answer ONLY using the information provided below
+- Do NOT invent details
+- Be professional, clear, and concise
+
+--------------------------------
+PERSONAL DETAILS
+--------------------------------
 Name: Navraj Giri
 Email: nvrjgiri@gmail.com
 Phone: +91 8974729800
 
-Education:
-- Bachelor of Engineering, Computer Science (2022–2026)
-- Institution: BMS Institute of Technology and Management, Bengaluru
-- Current Semester: 8th
-- CGPA: 8.4 / 10
+--------------------------------
+EDUCATION
+--------------------------------
+Degree: Bachelor of Engineering (Computer Science)
+Institution: BMS Institute of Technology and Management, Bengaluru
+Duration: 2022 – 2026
+Current Semester: 8th
+CGPA: 8.4 / 10
 
-Skills:
+--------------------------------
+TECHNICAL SKILLS
+--------------------------------
+Programming Languages:
 - Python, C, C++, JavaScript
+
+Web Development:
 - HTML, CSS, JavaScript
 - Node.js, Express.js
+
+Databases:
 - MongoDB, MySQL
-- DSA, OOPS, DBMS, Computer Networks
 
-Projects:
-- CryptoPro (crypto trading platform)
-- Portfolio Optimization using Fuzzy Logic
-- AI-powered Stock Analysis Tool
-- Student Database Management System (C++)
-- Risk Aware Pathways to Carbon Neutrality
-- Road Construction Optimization (Kruskal)
+Core CS Subjects:
+- Data Structures & Algorithms
+- Object Oriented Programming
+- Database Management Systems
+- Computer Networks
 
-Achievements:
+--------------------------------
+KEY PROJECTS
+--------------------------------
+
+1. Risk Aware Pathways to Carbon Neutrality
+- A major academic project focused on environmental sustainability
+- Uses Monte Carlo Simulation to model uncertainty in carbon emissions
+- Applies the Whale Optimization Algorithm (WOA) to optimize mitigation strategies
+- Designed specifically for coal mining environments
+- Helps industries evaluate multiple risk-aware pathways to reduce emissions
+- Aligns with UN Sustainable Development Goals (SDG 9, 12, and 13)
+
+2. CryptoPro
+- A real-time cryptocurrency trading and portfolio platform
+- Built using HTML, CSS, JavaScript, Node.js, Express.js, and MongoDB
+- Features user authentication, portfolio tracking, and price monitoring
+
+3. Portfolio Optimization Using Fuzzy Set Logic
+- Combines Modern Portfolio Theory (MPT) with fuzzy logic
+- Helps interpret uncertain market conditions for better investment decisions
+
+4. AI-powered Stock Analysis Tool
+- Uses financial data analysis with optimization techniques
+- Focuses on intelligent decision support for investors
+
+5. Student Database Management System
+- Built in C++ using file handling
+- Manages student records efficiently
+
+6. Road Construction Optimization
+- Uses Kruskal’s Algorithm
+- Finds minimum cost paths for infrastructure planning
+
+--------------------------------
+ACHIEVEMENTS & CERTIFICATIONS
+--------------------------------
 - Winner of Hacksphere Hackathon
-- Full Stack Development using AI (Cuvette)
-- Frontend Web Development (Coursevita)
+- Certified in Full Stack Development using AI (Cuvette)
+- Certified in Frontend Web Development (Coursevita)
 
-Rules:
-- Answer ONLY from this data
-- Do NOT invent anything
-- Be professional and clear
+--------------------------------
+EXTRA KNOWLEDGE
+--------------------------------
+- Basic DevOps concepts
+- Cloud simulation using CloudSim
+- Knowledge of Indian Knowledge Systems (IKS)
+
+--------------------------------
+SPORTS
+--------------------------------
+- Represented college at VTU level
+- Events: Marathon, 100m, 200m
 `;
 
 /* =======================
@@ -96,19 +153,17 @@ Assistant:
 `;
 
     const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const reply = response.text();
+    const reply = result.response.text();
 
     res.json({ reply });
-  } } catch (error) {
-  console.error("❌ Gemini Error FULL:", error);
+  } catch (error) {
+    console.error("❌ Gemini Error:", error);
 
-  res.status(500).json({
-    reply: "Gemini error",
-    error: error.message || error.toString()
-  });
-}
-
+    res.status(500).json({
+      reply: "Sorry, something went wrong with the AI. Please try again later.",
+      error: error.message
+    });
+  }
 });
 
 /* =======================
