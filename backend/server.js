@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 const bodyParser = require("body-parser");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 require("dotenv").config();
@@ -10,11 +11,53 @@ const PORT = 5000;
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
+// Serve frontend files from the 'myportfolio' subdirectory
+app.use(express.static(path.join(__dirname, '../myportfolio')));
+
+app.get('/', (req, res) => {
+  // The index.html is inside the 'myportfolio' folder, not just the parent root
+  const indexPath = path.join(__dirname, '../myportfolio/index.html');
+  res.sendFile(indexPath);
+});
 
 // Initialize Gemini
-// Make sure to create a .env file and add your GEMINI_API_KEY
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+let model = null;
+
+async function initializeAI() {
+  try {
+    const key = process.env.GEMINI_API_KEY;
+    console.log("Fetching available models...");
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
+    const data = await response.json();
+
+    let modelName = "gemini-1.5-flash"; // Default fallback
+
+    if (data.models) {
+      // Find the first model that supports generateContent and is 'flash' or 'pro'
+      const validModel = data.models.find(m =>
+        m.supportedGenerationMethods &&
+        m.supportedGenerationMethods.includes("generateContent") &&
+        (m.name.includes("flash") || m.name.includes("pro"))
+      );
+
+      if (validModel) {
+        // The API returns names like "models/gemini-1.5-flash", we often need just "gemini-1.5-flash"
+        // but the SDK handles "models/" prefix fine usually. Let's keep it safe.
+        modelName = validModel.name.replace("models/", "");
+      }
+    }
+
+    console.log(`✅ Using Gemini Model: ${modelName}`);
+    const genAI = new GoogleGenerativeAI(key);
+    model = genAI.getGenerativeModel({ model: modelName });
+
+  } catch (error) {
+    console.error("❌ Failed to auto-detect model:", error.message);
+    // Fallback
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  }
+}
 
 // Expanded Context about Navraj
 const navrajProfile = `
@@ -34,8 +77,8 @@ You are a highly knowledgeable and professional AI assistant for Navraj Giri. Yo
 **2. Education:**
 - **Bachelor of Engineering, Computer Science (2022–2026):**
   - **Institution:** BMS Institute of Technology and Management, Bengaluru
-  - **Current Status:** 7th Semester Student
-  - **CGPA:** 8.33 / 10
+  - **Current Status:** 8th Semester Student
+  - **CGPA:** 8.4 / 10
 - **Class 12 (Science, 2021–2022):**
   - **School:** Pranab Vidyapith Higher Secondary School (Nagaland Board)
   - **Percentage:** 72.60%
@@ -86,12 +129,8 @@ app.post("/chat", async (req, res) => {
   }
 
   try {
-    // We no longer need to append the whole profile to every prompt
-    // The model is initialized with a system instruction in newer SDKs
-    // For this approach, we create a chat session or provide context.
-    // For simplicity, we'll continue to prepend it for this stateless setup.
     const prompt = `${navrajProfile}\n\nUser: ${userMessage}\nAssistant:`;
-    
+
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const reply = response.text();
@@ -104,7 +143,8 @@ app.post("/chat", async (req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
+  await initializeAI();
   console.log(`✅ Chatbot server running on http://localhost:${PORT}`);
 });
 
