@@ -29,7 +29,7 @@ if (!process.env.GEMINI_API_KEY) {
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({
-  model: "gemini-1.0-pro" // MOST STABLE
+  model: "gemini-1.5-flash" // Updated model name
 });
 
 /* =======================
@@ -44,7 +44,7 @@ BMS Institute of Technology and Management, Bengaluru.
 
 Education:
 - B.E. Computer Science (2022–2026)
-- Current Semester: 8th
+- Current Semester: 5th
 - CGPA: 8.4 / 10
 
 Key Project:
@@ -68,29 +68,42 @@ Rules:
 app.post("/chat", async (req, res) => {
   try {
     const { message } = req.body;
-
+    
     if (!message) {
       return res.status(400).json({ reply: "Message required" });
     }
 
-    const prompt = `
-${navrajProfile}
+    const prompt = `${navrajProfile}
 
 User: ${message}
-Assistant:
-`;
+Assistant:`;
 
     const result = await model.generateContent(prompt);
-    const reply = result.response.text();
-
+    const response = await result.response;
+    const reply = response.text();
+    
     res.json({ reply });
-
+    
   } catch (error) {
-    console.error("❌ GEMINI FULL ERROR:", error);
-
+    console.error("❌ GEMINI ERROR:", error);
+    
+    // More detailed error response
+    let errorMessage = "AI temporarily unavailable. Please try again.";
+    
+    if (error.message) {
+      console.error("Error details:", error.message);
+      
+      // Check for specific error types
+      if (error.message.includes("API key")) {
+        errorMessage = "API key issue. Please check configuration.";
+      } else if (error.message.includes("quota")) {
+        errorMessage = "API quota exceeded. Please try again later.";
+      }
+    }
+    
     res.status(500).json({
-      reply: "AI temporarily unavailable",
-      error: error.message || error.toString()
+      reply: errorMessage,
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
