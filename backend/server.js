@@ -13,19 +13,6 @@ app.use(cors());
 app.use(bodyParser.json());
 
 /* =======================
-   DIAGNOSTIC ENDPOINT
-======================= */
-app.get("/diagnostic", (req, res) => {
-  res.json({
-    status: "Backend is running",
-    apiKeyPresent: !!process.env.GEMINI_API_KEY,
-    apiKeyLength: process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.length : 0,
-    nodeVersion: process.version,
-    timestamp: new Date().toISOString()
-  });
-});
-
-/* =======================
    HEALTH CHECK
 ======================= */
 app.get("/", (req, res) => {
@@ -33,33 +20,27 @@ app.get("/", (req, res) => {
 });
 
 /* =======================
-   GEMINI INIT WITH BETTER ERROR HANDLING
+   GEMINI INIT WITH AUTO MODEL DETECTION
 ======================= */
 if (!process.env.GEMINI_API_KEY) {
-  console.error("❌ GEMINI_API_KEY missing in environment variables");
-  console.error("Please set it using: export GEMINI_API_KEY='your-key-here'");
+  console.error("❌ GEMINI_API_KEY missing");
   process.exit(1);
 }
 
-console.log("✅ API Key found, length:", process.env.GEMINI_API_KEY.length);
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-let genAI, model;
+// Try models in order until one works
+const MODELS_TO_TRY = [
+  "gemini-1.5-flash-latest",
+  "gemini-1.5-flash",
+  "gemini-1.5-pro-latest", 
+  "gemini-1.5-pro",
+  "gemini-pro",
+  "models/gemini-pro"
+];
 
-try {
-  genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-  
-  // Try models in order of preference
-  const models = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"];
-  const modelToUse = "gemini-1.5-flash"; // Use the latest stable model
-  
-  model = genAI.getGenerativeModel({
-    model: modelToUse
-  });
-  console.log(`✅ Gemini model initialized successfully: ${modelToUse}`);
-} catch (error) {
-  console.error("❌ Failed to initialize Gemini:", error.message);
-  process.exit(1);
-}
+let model = null;
+let workingModel = null;
 
 /* =======================
    CONTEXT
@@ -87,131 +68,158 @@ Rules:
 - If unknown, say you don't know`;
 
 /* =======================
-   TEST ENDPOINT (SIMPLE)
+   GET WORKING MODEL
 ======================= */
-app.get("/test-gemini", async (req, res) => {
-  console.log("🧪 Testing Gemini API...");
+async function getWorkingModel() {
+  if (workingModel && model) {
+    return { model, name: workingModel };
+  }
+
+  console.log("🔍 Testing available models...");
   
+  for (const modelName of MODELS_TO_TRY) {
+    try {
+      console.log(`Testing: ${modelName}...`);
+      const testModel = genAI.getGenerativeModel({ model: modelName });
+      
+      // Test with a simple prompt
+      const result = await testModel.generateContent("Say hi");
+      await result.response;
+      
+      console.log(`✅ Model working: ${modelName}`);
+      model = testModel;
+      workingModel = modelName;
+      return { model: testModel, name: modelName };
+      
+    } catch (error) {
+      console.log(`❌ ${modelName} failed:`, error.message.substring(0, 100));
+    }
+  }
+  
+  throw new Error("No working Gemini models found. Please check your API key.");
+}
+
+/* =======================
+   LIST AVAILABLE MODELS ENDPOINT
+======================= */
+app.get("/list-models", async (req, res) => {
   try {
-    const result = await model.generateContent("Say 'Hello, I am working!' in one sentence");
-    const response = await result.response;
-    const text = response.text();
-    
-    console.log("✅ Gemini test successful:", text);
-    
-    res.json({ 
-      status: "SUCCESS", 
-      reply: text,
-      timestamp: new Date().toISOString()
+    const models = await genAI.listModels();
+    res.json({
+      models: models.map(m => ({
+        name: m.name,
+        displayName: m.displayName,
+        supportedMethods: m.supportedGenerationMethods
+      }))
     });
-    
   } catch (error) {
-    console.error("❌ Gemini test failed:");
-    console.error("Error name:", error.name);
-    console.error("Error message:", error.message);
-    console.error("Full error:", JSON.stringify(error, null, 2));
-    
     res.status(500).json({ 
-      status: "FAILED", 
-      errorName: error.name,
-      errorMessage: error.message,
-      fullError: error.toString()
+      error: error.message,
+      hint: "Your API key might not have access to list models"
     });
   }
 });
 
 /* =======================
-   CHAT API (ENHANCED LOGGING)
+   TEST ENDPOINT
+======================= */
+app.get("/test-gemini", async (req, res) => {
+  try {
+    const { model: testModel, name } = await getWorkingModel();
+    
+    const result = await testModel.generateContent("Say 'Hello! I am working correctly!' in one sentence");
+    const response = await result.response;
+    const text = response.text();
+    
+    res.json({ 
+      status: "SUCCESS",
+      modelUsed: name,
+      reply: text
+    });
+    
+  } catch (error) {
+    console.error("❌ Test failed:", error.message);
+    res.status(500).json({ 
+      status: "FAILED",
+      error: error.message,
+      hint: "Your API key might be invalid or expired. Get a new one at https://aistudio.google.com/app/apikey"
+    });
+  }
+});
+
+/* =======================
+   CHAT API
 ======================= */
 app.post("/chat", async (req, res) => {
   const requestId = Date.now();
-  console.log(`\n📨 [${requestId}] New chat request received`);
+  console.log(`\n📨 [${requestId}] New chat request`);
   
   try {
     const { message } = req.body;
     
-    console.log(`📝 [${requestId}] Message:`, message);
-    
     if (!message || message.trim() === "") {
-      console.log(`⚠️ [${requestId}] Empty message received`);
       return res.status(400).json({ reply: "Please provide a message" });
     }
+
+    console.log(`📝 [${requestId}] Message: ${message}`);
+    
+    // Get or initialize working model
+    const { model: chatModel, name: modelName } = await getWorkingModel();
+    
+    console.log(`🤖 [${requestId}] Using model: ${modelName}`);
 
     const prompt = `${navrajProfile}
 
 User: ${message}
 Assistant:`;
 
-    console.log(`🤖 [${requestId}] Sending to Gemini...`);
-    
-    const result = await model.generateContent(prompt);
-    
-    console.log(`📥 [${requestId}] Received response from Gemini`);
-    
+    const result = await chatModel.generateContent(prompt);
     const response = await result.response;
     const reply = response.text();
     
-    console.log(`✅ [${requestId}] Reply:`, reply.substring(0, 100) + "...");
+    console.log(`✅ [${requestId}] Reply generated`);
     
     res.json({ reply });
     
   } catch (error) {
-    console.error(`\n❌ [${requestId}] ERROR OCCURRED:`);
-    console.error(`Error Type: ${error.constructor.name}`);
-    console.error(`Error Message: ${error.message}`);
-    console.error(`Error Stack:`, error.stack);
+    console.error(`❌ [${requestId}] ERROR:`, error.message);
     
-    // Check for specific error types
     let errorMessage = "AI temporarily unavailable. Please try again.";
-    let statusCode = 500;
     
-    if (error.message) {
-      const msg = error.message.toLowerCase();
-      
-      if (msg.includes("api key") || msg.includes("invalid key")) {
-        errorMessage = "Invalid API key. Please check configuration.";
-        console.error("💡 Hint: Verify your GEMINI_API_KEY is correct");
-      } else if (msg.includes("quota") || msg.includes("rate limit")) {
-        errorMessage = "API quota exceeded. Please try again later.";
-        console.error("💡 Hint: Check your Gemini API quota at https://aistudio.google.com");
-      } else if (msg.includes("safety") || msg.includes("blocked")) {
-        errorMessage = "Response was blocked by safety filters. Try rephrasing.";
-      } else if (msg.includes("timeout")) {
-        errorMessage = "Request timed out. Please try again.";
-      } else if (msg.includes("network") || msg.includes("fetch")) {
-        errorMessage = "Network error. Check your internet connection.";
-      }
+    if (error.message.includes("API key")) {
+      errorMessage = "Invalid API key. Please get a new one from https://aistudio.google.com/app/apikey";
+    } else if (error.message.includes("quota")) {
+      errorMessage = "API quota exceeded. Please try again later or upgrade your plan.";
+    } else if (error.message.includes("No working")) {
+      errorMessage = "Unable to find compatible AI model. Please check your API key permissions.";
     }
     
-    res.status(statusCode).json({
-      reply: errorMessage,
-      debug: {
-        errorType: error.constructor.name,
-        errorMessage: error.message
-      }
-    });
+    res.status(500).json({ reply: errorMessage });
   }
-});
-
-/* =======================
-   ERROR HANDLER
-======================= */
-app.use((err, req, res, next) => {
-  console.error("🔥 Unhandled error:", err);
-  res.status(500).json({ 
-    reply: "Server error occurred",
-    error: err.message 
-  });
 });
 
 /* =======================
    START SERVER
 ======================= */
-app.listen(PORT, () => {
-  console.log(`\n${"=".repeat(50)}`);
+app.listen(PORT, async () => {
+  console.log(`\n${"=".repeat(60)}`);
   console.log(`✅ Backend running on port ${PORT}`);
-  console.log(`🔍 Diagnostic endpoint: http://localhost:${PORT}/diagnostic`);
-  console.log(`🧪 Test endpoint: http://localhost:${PORT}/test-gemini`);
-  console.log(`💬 Chat endpoint: POST http://localhost:${PORT}/chat`);
-  console.log(`${"=".repeat(50)}\n`);
+  console.log(`${"=".repeat(60)}`);
+  
+  // Test model on startup
+  try {
+    const { name } = await getWorkingModel();
+    console.log(`✅ Active Gemini model: ${name}`);
+  } catch (error) {
+    console.error(`❌ WARNING: Could not initialize Gemini model`);
+    console.error(`   Error: ${error.message}`);
+    console.error(`   The /chat endpoint may not work until this is resolved.`);
+  }
+  
+  console.log(`\n📍 Endpoints:`);
+  console.log(`   • Health: http://localhost:${PORT}/`);
+  console.log(`   • Test: http://localhost:${PORT}/test-gemini`);
+  console.log(`   • List Models: http://localhost:${PORT}/list-models`);
+  console.log(`   • Chat: POST http://localhost:${PORT}/chat`);
+  console.log(`${"=".repeat(60)}\n`);
 });
