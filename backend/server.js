@@ -100,12 +100,15 @@ Assistant:
     const reply = response.text();
 
     res.json({ reply });
-  } catch (error) {
-    console.error("❌ Gemini Error:", error);
-    res.status(500).json({
-      reply: "Sorry, something went wrong with the AI. Please try again later."
-    });
-  }
+  } } catch (error) {
+  console.error("❌ Gemini Error FULL:", error);
+
+  res.status(500).json({
+    reply: "Gemini error",
+    error: error.message || error.toString()
+  });
+}
+
 });
 
 /* =======================
