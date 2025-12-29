@@ -2,70 +2,102 @@ const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-require("dotenv").config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+/* =======================
+   MIDDLEWARE
+======================= */
 app.use(cors());
 app.use(bodyParser.json());
 
+/* =======================
+   HEALTH CHECK
+======================= */
 app.get("/", (req, res) => {
   res.json({ status: "Backend is running" });
 });
 
+/* =======================
+   GEMINI INIT (SAFE)
+======================= */
 if (!process.env.GEMINI_API_KEY) {
-  console.error("GEMINI_API_KEY missing");
+  console.error("❌ GEMINI_API_KEY missing");
   process.exit(1);
 }
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({
-  model: "gemini-1.0-pro"
+  model: "gemini-1.0-pro" // MOST STABLE
 });
 
+/* =======================
+   CONTEXT
+======================= */
 const navrajProfile = `
-You are an AI assistant representing Navraj Giri.
+You are an AI assistant for Navraj Giri.
+Answer strictly from the information below.
+
+Navraj Giri is a Computer Science Engineering student at
+BMS Institute of Technology and Management, Bengaluru.
 
 Education:
 - B.E. Computer Science (2022–2026)
-- BMS Institute of Technology and Management
-- 8th Semester, CGPA 8.4
+- Current Semester: 8th
+- CGPA: 8.4 / 10
 
-Major Project:
-Risk Aware Pathways to Carbon Neutrality:
-- Uses Monte Carlo Simulation for uncertainty modeling
-- Uses Whale Optimization Algorithm (WOA)
-- Focused on coal mining emission reduction
-- Aligns with SDG 9, 12, and 13
+Key Project:
+"Risk Aware Pathways to Carbon Neutrality"
+- Uses Monte Carlo Simulation to estimate uncertainty in coal mine emissions
+- Applies Whale Optimization Algorithm (WOA) to optimize mitigation strategies
+- Focuses on reducing carbon footprint under risk conditions
+- Aligns with SDG 13 (Climate Action)
 
 Skills:
-Python, C, C++, JavaScript, Node.js, Express, MongoDB, MySQL
+Python, C, C++, JavaScript, Node.js, Express, MongoDB, SQL
 
 Rules:
-Answer ONLY from this data.
-Do NOT invent.
+- Do NOT invent information
+- If unknown, say you don't know
 `;
 
+/* =======================
+   CHAT API
+======================= */
 app.post("/chat", async (req, res) => {
   try {
     const { message } = req.body;
+
     if (!message) {
-      return res.status(400).json({ reply: "Message is required" });
+      return res.status(400).json({ reply: "Message required" });
     }
 
-    const prompt = `${navrajProfile}\nUser: ${message}\nAssistant:`;
-    const result = await model.generateContent(prompt);
+    const prompt = `
+${navrajProfile}
 
-    res.json({ reply: result.response.text() });
+User: ${message}
+Assistant:
+`;
+
+    const result = await model.generateContent(prompt);
+    const reply = result.response.text();
+
+    res.json({ reply });
+
   } catch (error) {
-    console.error("Gemini Error:", error.message);
+    console.error("❌ GEMINI FULL ERROR:", error);
+
     res.status(500).json({
-      reply: "AI temporarily unavailable. Please try again."
+      reply: "AI temporarily unavailable",
+      error: error.message || error.toString()
     });
   }
 });
 
+/* =======================
+   START SERVER
+======================= */
 app.listen(PORT, () => {
-  console.log(`Backend running on port ${PORT}`);
+  console.log(`✅ Backend running on port ${PORT}`);
 });
