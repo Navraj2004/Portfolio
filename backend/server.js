@@ -31,12 +31,9 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // Try models in order until one works
 const MODELS_TO_TRY = [
-  "gemini-1.5-flash-latest",
-  "gemini-1.5-flash",
-  "gemini-1.5-pro-latest", 
-  "gemini-1.5-pro",
-  "gemini-pro",
-  "models/gemini-pro"
+  "gemini-2.5-flash",   // ✅ confirmed working
+  "gemini-1.5-flash",   // fallback
+  "gemini-1.5-pro"      // fallback
 ];
 
 let model = null;
